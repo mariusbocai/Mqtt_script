@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 import Adafruit_DHT
 
 makeMeasurement = 0
-global S1AirTempRcvd
+S1AirTempRcvd = 0
 S1AirHumiRcvd = 0
 S1SoilHumiRcvd = 0
 S2AirTempRcvd = 0
@@ -26,18 +26,27 @@ def Local_on_connect(client, userdata, flags, rc):
         print("Bad connection Returned code=",rc)
         #client.loop_stop()  
 def Local_on_message(client, userdata, message):
-    global makeMeasurement, S1AirHumiRcvd, S1SoilHumiRcvd, S1AirTemp, S1AirHumi, S1SoilHumi, S2AirTempRcvd, S2AirTemp, S2AirHumiRcvd, S2AirHumi, S2SoilHumiRcvd, S2SoilHumi
+    global makeMeasurement
     global S1AirTempRcvd
+    global S1AirHumiRcvd
+    global S1SoilHumiRcvd
+    global S1AirTemp
+    global S1AirHumi
+    global S1SoilHumi
+    global S2AirTempRcvd
+    global S2AirHumiRcvd
+    global S2SoilHumiRcvd
+    global S2AirTemp
+    global S2AirHumi
+    global S2SoilHumi
     print("Message received from local MQTT Broker topic:" ,str(message.topic))
     print("Message received from local MQTT Broker payload:" ,str(message.payload.decode("utf-8")))
     print("Message qos=",message.qos)
     print("Message retain flag=",message.retain)
     makeMeasurement = 1 #set flag to announce a message has arrived
     if message.topic=="Solar1/AirTemp":
-        print("OK")
         S1AirTempRcvd = 1
         S1AirTemp = message.payload
-        print("OK2")
     if message.topic=="Solar1/AirHumi":
         S1AirHumiRcvd = 1
         S1AirHumi = message.payload
@@ -109,7 +118,7 @@ try:
     while True:
         #stay in a loop until a message has arrived
         while makeMeasurement==0:
-	   continue
+            continue
         makeMeasurement = 0
         #got a measurement, now add it to the JSON struct
         if S1AirTempRcvd==1:
