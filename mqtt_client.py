@@ -44,13 +44,13 @@ def Local_on_message(client, userdata, message):
     print("Message qos=",message.qos)
     print("Message retain flag=",message.retain)
     makeMeasurement = 1 #set flag to announce a message has arrived
-    if message.topic=="Solar1/AirTemp":
+    if message.topic=="/Solar1/Temperatura_aer":
         S1AirTempRcvd = 1
         S1AirTemp = message.payload
-    if message.topic=="Solar1/AirHumi":
+    if message.topic=="/Solar1/Umiditate_aer":
         S1AirHumiRcvd = 1
         S1AirHumi = message.payload
-    if message.topic=="Solar1/SoilHumi":
+    if message.topic=="/Solar1/Umiditate_sol":
         S1SoilHumiRcvd = 1
         S1SoilHumi = message.payload
     if message.topic=="Solar2/AirTemp":
@@ -95,9 +95,9 @@ mqttc.on_disconnect=Local_on_disconnect
 try:
     mqttc.connect(MOSQUITTO_HOST,MOSQUITTO_PORT);
     mqttc.loop_start()
-    mqttc.subscribe("Solar1/AirTemp")
-    mqttc.subscribe("Solar1/AirHumi")
-    mqttc.subscribe("Solar1/SoilHumi")
+    mqttc.subscribe("/Solar1/Temperatura_aer")
+    mqttc.subscribe("/Solar1/Umiditate_aer")
+    mqttc.subscribe("/Solar1/Umiditate_sol")
     mqttc.subscribe("Solar2/AirTemp")
     mqttc.subscribe("Solar2/AirHumi")
     mqttc.subscribe("Solar2/SoilHumi")
@@ -128,11 +128,11 @@ try:
             #S1AirTempRcvd = 0
         if S1AirHumiRcvd==1:
             data["S1_AH"] = S1AirHumi
-            print('S1 Air Humidity:    {0:0.2f} %'.format(S1AirHumi))
+            #print('S1 Air Humidity:    {0:0.2f} %'.format(S1AirHumi))
             #S1AirHumiRcvd=0
         if S1SoilHumiRcvd==1:
             data["S1_SH"] = S1SoilHumi
-            print('S1 Soil Humidity:    {0:0.2f} %'.format(S1SoilHumi))
+            #print('S1 Soil Humidity:    {0:0.2f} %'.format(S1SoilHumi))
             #S1SoilHumiRcvd=0
         if S2AirTempRcvd==1:
             data["S2_AT"] = S2AirTemp
@@ -158,7 +158,9 @@ try:
             data_out=json.dumps(data)
             client.username_pw_set(username, password)
             client.connect(broker,port)           #establish connection
+            time.sleep(5)
             client.loop_start()
+            time.sleep(2)
             if True == client.connected_flag:
                 time.sleep(1)
                 (ret,mid) = client.publish(topic,data_out)
