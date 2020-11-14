@@ -24,7 +24,7 @@ def Local_on_connect(client, userdata, flags, rc):
     if rc==0:
         #client.connected_flag=True #set flag
         print("Succesfully connected to local MQTT Broker")
-	logging.info('Succesfully connected to local MQTT Broker')
+	logging.info('Succesfully connected to local MQTT Broker with code %s', str(rc))
     else:
         print("Bad connection Returned code=",rc)
 	logging.warning('Bad connection')
@@ -44,8 +44,9 @@ def Local_on_message(client, userdata, message):
     global S2AirHumi
     global S2SoilHumi
     print("Message received from local MQTT Broker topic:" ,str(message.topic))
-    logging.info("Message received from local MQTT Broker topic:" ,str(message.topic))
+    logging.info('Message received from local MQTT Broker topic: %s' ,str(message.topic))
     print("Message received from local MQTT Broker payload:" ,str(message.payload.decode("utf-8")))
+    logging.info('Message received from local MQTT Broker payload: %s' ,str(message.payload.decode("utf-8")))
     print("Message qos=",message.qos)
     print("Message retain flag=",message.retain)
     makeMeasurement = 1 #set flag to announce a message has arrived
@@ -113,8 +114,10 @@ try:
     mqttc.subscribe("Solar2/SoilHumi")
 except Exception as e:
     print('Error connecting to the local mqtt broker: {0}'.format(e))
+    logging.error('Error connecting to the local mqtt broker!')
 
 print('Preparing the ThingsBoard connection:')
+logging.info('Preparing the ThingsBoard connection')
 mqtt.Client.connected_flag=False#create flag in class
 client = mqtt.Client("python1")             #create new instance 
 client.on_connect = on_connect
@@ -162,6 +165,7 @@ try:
         #print('Humidity:    {0:0.2f} %'.format(humidity))
         if S1AirTempRcvd==1 and S1AirHumiRcvd==1 and S1SoilHumiRcvd:
             print("Solar1 all 3 parameters have been succesfully received, attempting to send data to ThingsBoard")
+            logging.info('Solar1 all 3 parameters have been succesfully received, attempting to send data to ThingsBoard')
             S1AirTempRcvd = 0
             S1AirHumiRcvd = 0
             S1SoilHumiRcvd = 0
@@ -176,13 +180,16 @@ try:
                 (ret,mid) = client.publish(topic,data_out)
                 if ret == mqtt.MQTT_ERR_SUCCESS:
                     print 'ThingsBoard Updated '
+                    logging.info('ThingsBoard Updated')
                 elif ret == mqtt.MQTT_ERR_NO_CONN:
                     print 'ERROR '
+                    logging.error('Error updating Thingsboard')
                 client.disconnect()
                 client.loop_stop()
 
             if False == client.connected_flag:
                 print("Disconnected")
+                logging.error('Disconnected')
 
 except Exception,e:
     mqttc.loop_stop()
