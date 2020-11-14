@@ -5,6 +5,7 @@ import time
 import datetime
 import paho.mqtt.client as mqtt
 import Adafruit_DHT
+import logging
 
 makeMeasurement = 0
 S1AirTempRcvd = 0
@@ -17,13 +18,16 @@ S2SoilHumiRcvd = 0
 
 def Local_on_disconnect(client, userdata, rc):
     print("Got disconnected from local MQTT Broker; reason  "  +str(rc))
+    logging.warning('Got disconnected from local MQTT Broker')
     #client.connected_flag=False
 def Local_on_connect(client, userdata, flags, rc):
     if rc==0:
         #client.connected_flag=True #set flag
         print("Succesfully connected to local MQTT Broker")
+	logging.info('Succesfully connected to local MQTT Broker')
     else:
         print("Bad connection Returned code=",rc)
+	logging.warning('Bad connection')
         #client.loop_stop()  
 def Local_on_message(client, userdata, message):
     global makeMeasurement
@@ -40,6 +44,7 @@ def Local_on_message(client, userdata, message):
     global S2AirHumi
     global S2SoilHumi
     print("Message received from local MQTT Broker topic:" ,str(message.topic))
+    logging.info("Message received from local MQTT Broker topic:" ,str(message.topic))
     print("Message received from local MQTT Broker payload:" ,str(message.payload.decode("utf-8")))
     print("Message qos=",message.qos)
     print("Message retain flag=",message.retain)
@@ -66,14 +71,17 @@ def Local_on_message(client, userdata, message):
 
 def on_disconnect(client, userdata, rc):
     print("Whoops... got disconnected from Thingsboard because:  "  +str(rc))
+    logging.warning('Whoops... got disconnected from Thingsboard')
     client.connected_flag=False
 #
 def on_connect(client, userdata, flags, rc):
     if rc==0:
         client.connected_flag=True #set flag
         print("Yey! Connected to thingsBoard!")
+        logging.info('Yey! Connected to thingsBoard!')
     else:
         print("Bad connection to ThingsBoard; Returned code=",rc)
+	logging.warning('Bad connection to ThingsBoard')
         client.loop_stop()  
 
 broker="demo.thingsboard.io"
@@ -88,6 +96,8 @@ MOSQUITTO_PORT = 1883
 print('Welcome! Starting listening for messages on 6 topics. Will relay the info to ThingsBoard soon.')
 print('Press Ctrl-C to quit.')
 print('Connecting to MQTT on {0}'.format(MOSQUITTO_HOST))
+logging.basicConfig(filename='/home/pi/Public/Mqtt_script/out.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.info('Script started')
 mqttc = mqtt.Client("python_pub")
 mqttc.on_message=Local_on_message
 mqttc.on_connect=Local_on_connect
