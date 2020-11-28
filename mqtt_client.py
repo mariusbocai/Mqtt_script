@@ -14,6 +14,8 @@ S1SoilHumiRcvd = 0
 S2AirTempRcvd = 0
 S2AirHumiRcvd = 0
 S2SoilHumiRcvd = 0
+CameraAirTempRcvd = 0
+CameraAirHumiRcvd = 0
 
 
 def Local_on_disconnect(client, userdata, rc):
@@ -43,6 +45,10 @@ def Local_on_message(client, userdata, message):
     global S2AirTemp
     global S2AirHumi
     global S2SoilHumi
+    global CameraAirTemp
+    global CameraAirHumi
+    global CameraAirTempRcvd
+    global CameraAirHumiRcvd
     print("Message received from local MQTT Broker topic:" ,str(message.topic))
     logging.info('Message received from local MQTT Broker topic: %s' ,str(message.topic))
     print("Message received from local MQTT Broker payload:" ,str(message.payload.decode("utf-8")))
@@ -50,6 +56,12 @@ def Local_on_message(client, userdata, message):
     print("Message qos=",message.qos)
     print("Message retain flag=",message.retain)
     makeMeasurement = 1 #set flag to announce a message has arrived
+    if message.topic=="/Camera/Temperatura_aer":
+        CameraAirTempRcvd = 1
+        CameraAirTemp = message.payload
+    if message.topic=="/Camera/Umiditate_aer":
+        CameraAirHumiRcvd = 1
+        CameraAirHumi = message.payload
     if message.topic=="/Solar1/Temperatura_aer":
         S1AirTempRcvd = 1
         S1AirTemp = message.payload
@@ -90,6 +102,7 @@ port =1883
 topic="v1/devices/me/telemetry"
 username="CAJHmOZ5opvh7Pf4blpJ"
 password=""
+username_camera="LQzrm6entkKl6t1x7vfs"
 
 MOSQUITTO_HOST = 'localhost'
 MOSQUITTO_PORT = 1883
@@ -112,6 +125,8 @@ try:
     mqttc.subscribe("Solar2/AirTemp")
     mqttc.subscribe("Solar2/AirHumi")
     mqttc.subscribe("Solar2/SoilHumi")
+    mqttc.subscribe("/Camera/Temperatura_aer")
+    mqttc.subscribe("/Camera/Umiditate_aer")
 except Exception as e:
     print('Error connecting to the local mqtt broker: {0}'.format(e))
     logging.error('Error connecting to the local mqtt broker!')
@@ -134,6 +149,10 @@ try:
             continue
         makeMeasurement = 0
         #got a measurement, now add it to the JSON struct
+        if CameraAirTempRcvd==1:
+            data["Temp_camera"] = CameraAirTemp
+        if CameraAirHumiRcvd==1:
+            data["Umid_camera"] = CameraAirHumi
         if S1AirTempRcvd==1:
             data["S1_AT"] = S1AirTemp
             #print('S1 Temperature: {0:0.2f} C'.format(S1AirTemp))
@@ -184,6 +203,29 @@ try:
                 elif ret == mqtt.MQTT_ERR_NO_CONN:
                     print 'ERROR '
                     logging.error('Error updating Thingsboard')
+                client.disconnect()
+                client.loop_stop()
+
+            if False == client.connected_flag:
+                print("Disconnected")
+                logging.error('Disconnected')
+        if CameraAirTempRcvd==1 and CameraAirHumiRcvd==1:
+            logging.info('Camera parameters have been succesfully received, attempting to send data to ThingsBoard')
+            CameraAirTempRcvd = 0
+            CameraAirHumiRcvd = 0
+            data_out=json.dumps(data)
+            client.username_pw_set(username_camera, password)
+            client.connect(broker,port)           #establish connection
+            time.sleep(5)
+            client.loop_start()
+            time.sleep(2)
+            if True == client.connected_flag:
+                time.sleep(1)
+                (ret,mid) = client.publish(topic,data_out)
+                if ret == mqtt.MQTT_ERR_SUCCESS:
+                    logging.info('Camera ThingsBoard Updated')
+                elif ret == mqtt.MQTT_ERR_NO_CONN:
+                    logging.error('Error updating Thingsboard Camera')
                 client.disconnect()
                 client.loop_stop()
 
